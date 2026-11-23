@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNC Factory — интерфейс базы данных</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f5f7fa;
+            color: #1e2a3a;
+            line-height: 1.5;
+            padding: 24px 20px;
+        }
+
+        .app {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #d0d9e8;
+            background: transparent;
+        }
+
+        .tab-btn {
+            background: #e9eef5;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 10px 22px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: 0.15s;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: -2px;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover {
+            background: #dbe3ef;
+        }
+
+        .tab-btn.active {
+            background: #ffffff;
+            border-bottom: 3px solid #2563eb;
+            color: #1e3a8a;
+            font-weight: 600;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.03);
+        }
+
+        .panel {
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+            padding: 24px 24px 32px;
+            border: 1px solid #e2e9f2;
+        }
+
+        .panel-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 12px;
+        }
+
+        .panel-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0b2a4a;
+            letter-spacing: -0.01em;
+        }
+
+        .btn {
+            background: #ffffff;
+            border: 1px solid #b8c9e0;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1e2f44;
+            cursor: pointer;
+            transition: 0.12s;
+            font-family: inherit;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #1e4f8a;
+            border-color: #1e4f8a;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #123b6b;
+            border-color: #123b6b;
+        }
+
+        .btn-danger {
+            background: #ffffff;
+            border-color: #d77;
+            color: #a33;
+        }
+
+        .btn-danger:hover {
+            background: #fce8e8;
+            border-color: #b33;
+        }
+
+        .btn-sm {
+            padding: 4px 12px;
+            font-size: 13px;
+            border-radius: 6px;
+        }
+
+        .btn:hover {
+            background: #f0f5fc;
+        }
+
+        .btn-primary:hover {
+            background: #123b6b;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #dfe7f0;
+            background: #fff;
+            margin-top: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            min-width: 700px;
+        }
+
+        th {
+            background: #f0f4fb;
+            color: #1f3a5e;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid #d0dcec;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #e9eef6;
+            vertical-align: middle;
+            color: #1e2f44;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f8faff;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #e6edf8;
+            color: #1d3a5c;
+        }
+
+        .badge-active { background: #dff0df; color: #1a6b2f; }
+        .badge-maintenance { background: #fff3d2; color: #8a6100; }
+        .badge-offline { background: #f6e0e0; color: #9e2b2b; }
+
+        .empty-row td {
+            text-align: center;
+            color: #7a8b9f;
+            padding: 32px;
+            font-style: italic;
+        }
+
+        .form-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px 18px;
+            align-items: flex-end;
+            margin: 24px 0 8px;
+            padding-top: 16px;
+            border-top: 1px solid #e0e8f2;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 130px;
+            flex: 1 0 120px;
+        }
+
+        .form-field label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: #4a617c;
+        }
+
+        .form-field input, .form-field select {
+            padding: 9px 12px;
+            border: 1px solid #cbd8e9;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fbfdff;
+            transition: 0.12s;
+        }
+
+        .form-field input:focus, .form-field select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+            background: #ffffff;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .inline-msg {
+            font-size: 13px;
+            color: #2f6e3f;
+            background: #e7f3e7;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+
+        .error-msg {
+            color: #b22;
+            background: #fce8e8;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .action-cell {
+            white-space: nowrap;
+        }
+
+        .action-cell button {
+            margin-right: 4px;
+        }
+
+        .query-section {
+            margin-top: 28px;
+        }
+
+        .query-box {
+            background: #f7faff;
+            border-radius: 12px;
+            padding: 20px 18px;
+            border: 1px solid #dde7f3;
+        }
+
+        .query-box h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            color: #1f3b60;
+        }
+
+        .query-result {
+            margin-top: 16px;
+            max-height: 320px;
+            overflow-y: auto;
+            border-radius: 10px;
+            border: 1px solid #d4e0ef;
+            background: #ffffff;
+        }
+
+        .query-result table {
+            min-width: 500px;
+        }
+
+        .query-result th {
+            position: sticky;
+            top: 0;
+            background: #eef3fc;
+            z-index: 2;
+        }
+
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .muted {
+            color: #6b7f96;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="tabs" id="tabs">
+        <button class="tab-btn active" data-tab="positions">Должности</button>
+        <button class="tab-btn" data-tab="employees">Сотрудники</button>
+        <button class="tab-btn" data-tab="machines">Станки</button>
+        <button class="tab-btn" data-tab="parts">Детали</button>
+        <button class="tab-btn" data-tab="orders">Заказы</button>
+        <button class="tab-btn" data-tab="shiftTasks">Сменные задания</button>
+        <button class="tab-btn" data-tab="queries">Запросы</button>
+    </div>
+
+    <div class="panel" id="panel">
+        <!-- динамическое содержимое -->
+    </div>
+</div>
+
+<script>
+    // ======================== ДАННЫЕ (эмуляция базы) ========================
+    const DB = {
+        positions: [
+            { position_id: 1, position_name: 'CNC Operator', base_salary: 3500.00 },
+            { position_id: 2, position_name: 'CNC Programmer', base_salary: 5000.00 },
+            { position_id: 3, position_name: 'Setup Technician', base_salary: 4200.00 },
+            { position_id: 4, position_name: 'Quality Inspector', base_salary: 4000.00 },
+            { position_id: 5, position_name: 'Shift Supervisor', base_salary: 5500.00 },
+            { position_id: 6, position_name: 'Maintenance Engineer', base_salary: 4800.00 },
+            { position_id: 7, position_name: 'Tooling Specialist', base_salary: 4100.00 },
+            { position_id: 8, position_name: 'Production Manager', base_salary: 7000.00 },
+            { position_id: 9, position_name: 'Logistics Coordinator', base_salary: 3800.00 },
+            { position_id: 10, position_name: 'Plant Director', base_salary: 9500.00 }
+        ],
+        employees: [
+            { employee_id: 1, first_name: 'John', last_name: 'Smith', position_id: 1, hire_date: '2020-03-15' },
+            { employee_id: 2, first_name: 'Emily', last_name: 'Johnson', position_id: 2, hire_date: '2019-07-22' },
+            { employee_id: 3, first_name: 'Michael', last_name: 'Williams', position_id: 3, hire_date: '2021-01-10' },
+            { employee_id: 4, first_name: 'Sarah', last_name: 'Brown', position_id: 4, hire_date: '2018-11-05' },
+            { employee_id: 5, first_name: 'David', last_name: 'Jones', position_id: 5, hire_date: '2017-06-18' },
+            { employee_id: 6, first_name: 'Jessica', last_name: 'Garcia', position_id: 6, hire_date: '2022-02-28' },
+            { employee_id: 7, first_name: 'Daniel', last_name: 'Miller', position_id: 7, hire_date: '2020-09-12' },
+            { employee_id: 8, first_name: 'Laura', last_name: 'Davis', position_id: 8, hire_date: '2015-04-01' },
+            { employee_id: 9, first_name: 'James', last_name: 'Rodriguez', position_id: 9, hire_date: '2023-05-20' },
+            { employee_id: 10, first_name: 'Robert', last_name: 'Wilson', position_id: 1, hire_date: '2021-08-14' }
+        ],
+        machines: [
+            { machine_id: 1, machine_name: 'Haas VF-2SS', machine_type: 'Vertical Milling', status: 'Active' },
+            { machine_id: 2, machine_name: 'DMG MORI CMX 50 U', machine_type: '5-Axis Milling', status: 'Active' },
+            { machine_id: 3, machine_name: 'Mazak QTN 250', machine_type: 'CNC Turning', status: 'Maintenance' },
+            { machine_id: 4, machine_name: 'Okuma GENOS L3000', machine_type: 'CNC Turning', status: 'Active' },
+            { machine_id: 5, machine_name: 'Fanuc RoboDrill', machine_type: 'High-Speed Milling', status: 'Active' },
+            { machine_id: 6, machine_name: 'Haas ST-20Y', machine_type: 'Mill-Turn', status: 'Active' },
+            { machine_id: 7, machine_name: 'DMG MORI NLX 2500', machine_type: 'CNC Turning', status: 'Offline' },
+            { machine_id: 8, machine_name: 'Makino F5', machine_type: 'Horizontal Milling', status: 'Active' },
+            { machine_id: 9, machine_name: 'Haas UMC-750', machine_type: '5-Axis Milling', status: 'Active' },
+            { machine_id: 10, machine_name: 'Doosan DVF 5000', machine_type: 'Vertical Milling', status: 'Active' }
+        ],
+        parts: [
+            { part_id: 1, part_name: 'Aluminum Flange', material: 'Aluminum 6061', unit_price: 45.50 },
+            { part_id: 2, part_name: 'Steel Drive Shaft', material: 'Stainless Steel 304', unit_price: 120.00 },
+            { part_id: 3, part_name: 'Titanium Bracket', material: 'Titanium Grade 5', unit_price: 250.75 },
+            { part_id: 4, part_name: 'Brass Valve Body', material: 'Brass C36000', unit_price: 85.20 },
+            { part_id: 5, part_name: 'Plastic Gear', material: 'Delrin POM', unit_price: 15.00 },
+            { part_id: 6, part_name: 'Copper Heat Sink', material: 'Copper C110', unit_price: 60.00 },
+            { part_id: 7, part_name: 'Steel Housing', material: 'Carbon Steel 1045', unit_price: 180.50 },
+            { part_id: 8, part_name: 'Aluminum Cover', material: 'Aluminum 5052', unit_price: 35.00 },
+            { part_id: 9, part_name: 'Titanium Impeller', material: 'Titanium Grade 5', unit_price: 450.00 },
+            { part_id: 10, part_name: 'Steel Pinion Gear', material: 'Alloy Steel 4140', unit_price: 95.30 }
+        ],
+        orders: [
+            { order_id: 1, client_name: 'Aerospace Dynamics', order_date: '2026-10-01', due_date: '2026-11-15', total_amount: 15000.00 },
+            { order_id: 2, client_name: 'AutoMotors Inc.', order_date: '2026-10-05', due_date: '2026-11-20', total_amount: 8500.00 },
+            { order_id: 3, client_name: 'MedTech Solutions', order_date: '2026-10-10', due_date: '2026-12-01', total_amount: 22000.00 },
+            { order_id: 4, client_name: 'Robotics Corp', order_date: '2026-10-12', due_date: '2026-11-30', total_amount: 11200.00 },
+            { order_id: 5, client_name: 'Energy Systems Ltd', order_date: '2026-10-15', due_date: '2026-12-10', total_amount: 30500.00 },
+            { order_id: 6, client_name: 'Marine Equipment Co', order_date: '2026-10-18', due_date: '2026-11-25', total_amount: 9800.00 },
+            { order_id: 7, client_name: 'Defense Technologies', order_date: '2026-10-20', due_date: '2026-12-15', total_amount: 45000.00 },
+            { order_id: 8, client_name: 'Consumer Electronics', order_date: '2026-10-25', due_date: '2026-11-28', total_amount: 5400.00 },
+            { order_id: 9, client_name: 'Heavy Machinery LLC', order_date: '2026-11-01', due_date: '2026-12-20', total_amount: 18700.00 },
+            { order_id: 10, client_name: 'AeroSpace Dynamics', order_date: '2026-11-05', due_date: '2026-12-30', total_amount: 27500.00 }
+        ],
+        shiftTasks: [
+            { task_id: 1, machine_id: 1, part_id: 1, employee_id: 1, order_id: 1, shift_date: '2026-11-20', planned_quantity: 100, actual_quantity: 85 },
+            { task_id: 2, machine_id: 2, part_id: 3, employee_id: 2, order_id: 3, shift_date: '2026-11-20', planned_quantity: 50, actual_quantity: 50 },
+            { task_id: 3, machine_id: 4, part_id: 2, employee_id: 10, order_id: 2, shift_date: '2026-11-20', planned_quantity: 75, actual_quantity: 40 },
+            { task_id: 4, machine_id: 5, part_id: 5, employee_id: 1, order_id: 8, shift_date: '2026-11-20', planned_quantity: 500, actual_quantity: 450 },
+            { task_id: 5, machine_id: 6, part_id: 4, employee_id: 3, order_id: 6, shift_date: '2026-11-20', planned_quantity: 120, actual_quantity: 120 },
+            { task_id: 6, machine_id: 8, part_id: 7, employee_id: 10, order_id: 9, shift_date: '2026-11-20', planned_quantity: 60, actual_quantity: 30 },
+            { task_id: 7, machine_id: 9, part_id: 9, employee_id: 2, order_id: 7, shift_date: '2026-11-20', planned_quantity: 20, actual_quantity: 15 },
+            { task_id: 8, machine_id: 10, part_id: 8, employee_id: 1, order_id: 4, shift_date: '2026-11-20', planned_quantity: 200, actual_quantity: 190 },
+            { task_id: 9, machine_id: 1, part_id: 6, employee_id: 3, order_id: 5, shift_date: '2026-11-20', planned_quantity: 150, actual_quantity: 100 },
+            { task_id: 10, machine_id: 2, part_id: 10, employee_id: 2, order_id: 10, shift_date: '2026-11-20', planned_quantity: 80, actual_quantity: 60 }
+        ]
+    };
+
+    // ======================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ========================
+    function nextId(arr, idField) {
+        if (!arr.length) return 1;
+        return Math.max(...arr.map(x => x[idField])) + 1;
+    }
+
+    function findName(collection, idField, idValue, nameField) {
+        const item = collection.find(x => x[idField] === idValue);
+        return item ? item[nameField] : '—';
+    }
+
+    // ======================== КОМПОНЕНТЫ ОТОБРАЖЕНИЯ ========================
+
+    // ----- ПОЗИЦИИ -----
+    function renderPositions() {
+        const rows = DB.positions.map(p => `
+            <tr>
+                <td>${p.position_id}</td>
+                <td>${p.position_name}</td>
+                <td>${p.base_salary.toFixed(2)}</td>
+                <td class="action-cell">
+                    <button class="btn btn-sm" onclick="editPosition(${p.position_id})">Ред.</button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePosition(${p.position_id})">Удал.</button>
+                </td>
+            </tr>
+        `).join('');
+
+        return `
+            <div class="panel-header">
+                <h2>Должности</h2>
+                <button class="btn btn-primary" onclick="addPosition()">+ Добавить должность</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>Название</th><th>Базовый оклад</th><th>Действия</th></tr></thead>
+                    <tbody>${rows || '<tr class="empty-row"><td colspan="4">Нет данных</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div id="position-form" class="form-grid hidden"></div>
+        `;
+    }
+
+    // ----- СОТРУДНИКИ -----
+    function renderEmployees() {
+        const rows = DB.employees.map(e => {
+            const posName = findName(DB.positions, 'position_id', e.position_id, 'position_name');
+            return `
+                <tr>
+                    <td>${e.employee_id}</td>
+                    <td>${e.first_name}</td>
+                    <td>${e.last_name}</td>
+                    <td>${posName}</td>
+                    <td>${e.hire_date}</td>
+                    <td class="action-cell">
+                        <button class="btn btn-sm" onclick="editEmployee(${e.employee_id})">Ред.</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${e.employee_id})">Удал.</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div class="panel-header">
+                <h2>Сотрудники</h2>
+                <button class="btn btn-primary" onclick="addEmployee()">+ Добавить сотрудника</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>Имя</th><th>Фамилия</th><th>Должность</th><th>Дата приёма</th><th>Действия</th></tr></thead>
+                    <tbody>${rows || '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div id="employee-form" class="form-grid hidden"></div>
+        `;
+    }
+
+    // ----- СТАНКИ -----
+    function renderMachines() {
+        const rows = DB.machines.map(m => {
+            let badgeClass = 'badge-active';
+            if (m.status === 'Maintenance') badgeClass = 'badge-maintenance';
+            else if (m.status === 'Offline') badgeClass = 'badge-offline';
+            return `
+                <tr>
+                    <td>${m.machine_id}</td>
+                    <td>${m.machine_name}</td>
+                    <td>${m.machine_type}</td>
+                    <td><span class="badge ${badgeClass}">${m.status}</span></td>
+                    <td class="action-cell">
+                        <button class="btn btn-sm" onclick="editMachine(${m.machine_id})">Ред.</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteMachine(${m.machine_id})">Удал.</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div class="panel-header">
+                <h2>Станки</h2>
+                <button class="btn btn-primary" onclick="addMachine()">+ Добавить станок</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>Название</th><th>Тип</th><th>Статус</th><th>Действия</th></tr></thead>
+                    <tbody>${rows || '<tr class="empty-row"><td colspan="5">Нет данных</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div id="machine-form" class="form-grid hidden"></div>
+        `;
+    }
+
+    // ----- ДЕТАЛИ -----
+    function renderParts() {
+        const rows = DB.parts.map(p => `
+            <tr>
+                <td>${p.part_id}</td>
+                <td>${p.part_name}</td>
+                <td>${p.material}</td>
+                <td>${p.unit_price.toFixed(2)}</td>
+                <td class="action-cell">
+                    <button class="btn btn-sm" onclick="editPart(${p.part_id})">Ред.</button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePart(${p.part_id})">Удал.</button>
+                </td>
+            </tr>
+        `).join('');
+
+        return `
+            <div class="panel-header">
+                <h2>Детали</h2>
+                <button class="btn btn-primary" onclick="addPart()">+ Добавить деталь</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>Название</th><th>Материал</th><th>Цена за ед.</th><th>Действия</th></tr></thead>
+                    <tbody>${rows || '<tr class="empty-row"><td colspan="5">Нет данных</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div id="part-form" class="form-grid hidden"></div>
+        `;
+    }
+
+    // ----- ЗАКАЗЫ -----
+    function renderOrders() {
+        const rows = DB.orders.map(o => `
+            <tr>
+                <td>${o.order_id}</td>
+                <td>${o.client_name}</td>
+                <td>${o.order_date}</td>
+                <td>${o.due_date}</td>
+                <td>${o.total_amount.toFixed(2)}</td>
+                <td class="action-cell">
+                    <button class="btn btn-sm" onclick="editOrder(${o.order_id})">Ред.</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteOrder(${o.order_id})">Удал.</button>
+                </td>
+            </tr>
+        `).join('');
+
+        return `
+            <div class="panel-header">
+                <h2>Заказы</h2>
+                <button class="btn btn-primary" onclick="addOrder()">+ Добавить заказ</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>Клиент</th><th>Дата заказа</th><th>Срок</th><th>Сумма</th><th>Действия</th></tr></thead>
+                    <tbody>${rows || '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div id="order-form" class="form-grid hidden"></div>
+        `;
+    }
+
+    // ----- СМЕННЫЕ ЗАДАНИЯ -----
+    function renderShiftTasks() {
+        const rows = DB.shiftTasks.map(t => {
+            const emp = findName(DB.employees, 'employee_id', t.employee_id, 'last_name') + ' ' + findName(DB.employees, 'employee_id', t.employee_id, 'first_name');
+            const mach = findName(DB.machines, 'machine_id', t.machine_id, 'machine_name');
+            const part = findName(DB.parts, 'part_id', t.part_id, 'part_name');
+            const ordClient = findName(DB.orders, 'order_id', t.order_id, 'client_name');
+            return `
+                <tr>
+                    <td>${t.task_id}</td>
+                    <td>${emp}</td>
+                    <td>${mach}</td>
+                    <td>${part}</td>
+                    <td>${ordClient}</td>
+                    <td>${t.shift_date}</td>
+                    <td>${t.planned_quantity}</td>
+                    <td>${t.actual_quantity}</td>
+                    <td class="action-cell">
+                        <button class="btn btn-sm" onclick="editShiftTask(${t.task_id})">Ред.</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteShiftTask(${t.task_id})">Удал.</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div class="panel-header">
+                <h2>Сменные задания</h2>
+                <button class="btn btn-primary" onclick="addShiftTask()">+ Добавить задание</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>Сотрудник</th><th>Станок</th><th>Деталь</th><th>Клиент</th><th>Дата смены</th><th>План</th><th>Факт</th><th>Действия</th></tr></thead>
+                    <tbody>${rows || '<tr class="empty-row"><td colspan="9">Нет данных</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div id="shiftTask-form" class="form-grid hidden"></div>
+        `;
+    }
+
+    // ----- ЗАПРОСЫ -----
+    function renderQueries() {
+        return `
+            <div class="panel-header">
+                <h2>Аналитические запросы</h2>
+            </div>
+            <div class="query-section">
+                <div class="query-box">
+                    <h3>Запрос 7: Полная сводка по сменным заданиям</h3>
+                    <button class="btn btn-primary" onclick="runQuery7()">Выполнить запрос</button>
+                    <div id="query7-result" class="query-result hidden"></div>
+                </div>
+                <div class="query-box" style="margin-top: 20px;">
+                    <h3>Запрос 8: Загрузка станков и выполнение плана</h3>
+                    <button class="btn btn-primary" onclick="runQuery8()">Выполнить запрос</button>
+                    <div id="query8-result" class="query-result hidden"></div>
+                </div>
+                <div class="query-box" style="margin-top: 20px;">
+                    <h3>Запрос 9: Выручка и количество деталей по каждому клиенту</h3>
+                    <button class="btn btn-primary" onclick="runQuery9()">Выполнить запрос</button>
+                    <div id="query9-result" class="query-result hidden"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ======================== CRUD-ФОРМЫ (эмуляция) ========================
+
+    // ---- ПОЗИЦИИ ----
+    function addPosition() {
+        const formDiv = document.getElementById('position-form');
+        formDiv.classList.remove('hidden');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Название</label><input id="pos-name" placeholder="Название должности"></div>
+            <div class="form-field"><label>Оклад</label><input id="pos-salary" type="number" step="0.01" placeholder="0.00"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveNewPosition()">Сохранить</button>
+                <button class="btn" onclick="document.getElementById('position-form').classList.add('hidden')">Отмена</button>
+                <span id="pos-msg" class="inline-msg hidden"></span>
+            </div>
+        `;
+    }
+
+    function saveNewPosition() {
+        const name = document.getElementById('pos-name').value.trim();
+        const salary = parseFloat(document.getElementById('pos-salary').value);
+        if (!name || isNaN(salary)) { alert('Заполните все поля корректно'); return; }
+        const id = nextId(DB.positions, 'position_id');
+        DB.positions.push({ position_id: id, position_name: name, base_salary: salary });
+        document.getElementById('pos-msg').classList.add('hidden');
+        renderCurrentTab();
+    }
+
+    function editPosition(id) {
+        const p = DB.positions.find(x => x.position_id === id);
+        if (!p) return;
+        const formDiv = document.getElementById('position-form');
+        formDiv.classList.remove('hidden');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Название</label><input id="pos-name" value="${p.position_name}"></div>
+            <div class="form-field"><label>Оклад</label><input id="pos-salary" type="number" step="0.01" value="${p.base_salary}"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveEditPosition(${id})">Обновить</button>
+                <button class="btn" onclick="document.getElementById('position-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveEditPosition(id) {
+        const p = DB.positions.find(x => x.position_id === id);
+        const name = document.getElementById('pos-name').value.trim();
+        const salary = parseFloat(document.getElementById('pos-salary').value);
+        if (!name || isNaN(salary)) { alert('Заполните все поля корректно'); return; }
+        p.position_name = name; p.base_salary = salary;
+        renderCurrentTab();
+    }
+
+    function deletePosition(id) {
+        if (!confirm('Удалить должность?')) return;
+        DB.positions = DB.positions.filter(x => x.position_id !== id);
+        renderCurrentTab();
+    }
+
+    // ---- СОТРУДНИКИ ----
+    function addEmployee() {
+        const formDiv = document.getElementById('employee-form');
+        formDiv.classList.remove('hidden');
+        const posOptions = DB.positions.map(p => `<option value="${p.position_id}">${p.position_name}</option>`).join('');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Имя</label><input id="emp-first" placeholder="Имя"></div>
+            <div class="form-field"><label>Фамилия</label><input id="emp-last" placeholder="Фамилия"></div>
+            <div class="form-field"><label>Должность</label><select id="emp-pos">${posOptions}</select></div>
+            <div class="form-field"><label>Дата приёма</label><input id="emp-date" type="date" value="2025-01-01"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveNewEmployee()">Сохранить</button>
+                <button class="btn" onclick="document.getElementById('employee-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveNewEmployee() {
+        const first = document.getElementById('emp-first').value.trim();
+        const last = document.getElementById('emp-last').value.trim();
+        const posId = parseInt(document.getElementById('emp-pos').value);
+        const date = document.getElementById('emp-date').value;
+        if (!first || !last || !date) { alert('Заполните все поля'); return; }
+        const id = nextId(DB.employees, 'employee_id');
+        DB.employees.push({ employee_id: id, first_name: first, last_name: last, position_id: posId, hire_date: date });
+        renderCurrentTab();
+    }
+
+    function editEmployee(id) {
+        const e = DB.employees.find(x => x.employee_id === id);
+        if (!e) return;
+        const formDiv = document.getElementById('employee-form');
+        formDiv.classList.remove('hidden');
+        const posOptions = DB.positions.map(p => `<option value="${p.position_id}" ${p.position_id === e.position_id ? 'selected' : ''}>${p.position_name}</option>`).join('');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Имя</label><input id="emp-first" value="${e.first_name}"></div>
+            <div class="form-field"><label>Фамилия</label><input id="emp-last" value="${e.last_name}"></div>
+            <div class="form-field"><label>Должность</label><select id="emp-pos">${posOptions}</select></div>
+            <div class="form-field"><label>Дата приёма</label><input id="emp-date" type="date" value="${e.hire_date}"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveEditEmployee(${id})">Обновить</button>
+                <button class="btn" onclick="document.getElementById('employee-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveEditEmployee(id) {
+        const e = DB.employees.find(x => x.employee_id === id);
+        const first = document.getElementById('emp-first').value.trim();
+        const last = document.getElementById('emp-last').value.trim();
+        const posId = parseInt(document.getElementById('emp-pos').value);
+        const date = document.getElementById('emp-date').value;
+        if (!first || !last || !date) { alert('Заполните все поля'); return; }
+        e.first_name = first; e.last_name = last; e.position_id = posId; e.hire_date = date;
+        renderCurrentTab();
+    }
+
+    function deleteEmployee(id) {
+        if (!confirm('Удалить сотрудника?')) return;
+        DB.employees = DB.employees.filter(x => x.employee_id !== id);
+        renderCurrentTab();
+    }
+
+    // ---- СТАНКИ ----
+    function addMachine() {
+        const formDiv = document.getElementById('machine-form');
+        formDiv.classList.remove('hidden');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Название</label><input id="mach-name" placeholder="Название станка"></div>
+            <div class="form-field"><label>Тип</label><input id="mach-type" placeholder="Тип"></div>
+            <div class="form-field"><label>Статус</label>
+                <select id="mach-status">
+                    <option value="Active">Active</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Offline">Offline</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveNewMachine()">Сохранить</button>
+                <button class="btn" onclick="document.getElementById('machine-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveNewMachine() {
+        const name = document.getElementById('mach-name').value.trim();
+        const type = document.getElementById('mach-type').value.trim();
+        const status = document.getElementById('mach-status').value;
+        if (!name || !type) { alert('Заполните все поля'); return; }
+        const id = nextId(DB.machines, 'machine_id');
+        DB.machines.push({ machine_id: id, machine_name: name, machine_type: type, status });
+        renderCurrentTab();
+    }
+
+    function editMachine(id) {
+        const m = DB.machines.find(x => x.machine_id === id);
+        if (!m) return;
+        const formDiv = document.getElementById('machine-form');
+        formDiv.classList.remove('hidden');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Название</label><input id="mach-name" value="${m.machine_name}"></div>
+            <div class="form-field"><label>Тип</label><input id="mach-type" value="${m.machine_type}"></div>
+            <div class="form-field"><label>Статус</label>
+                <select id="mach-status">
+                    <option value="Active" ${m.status === 'Active' ? 'selected' : ''}>Active</option>
+                    <option value="Maintenance" ${m.status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+                    <option value="Offline" ${m.status === 'Offline' ? 'selected' : ''}>Offline</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveEditMachine(${id})">Обновить</button>
+                <button class="btn" onclick="document.getElementById('machine-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveEditMachine(id) {
+        const m = DB.machines.find(x => x.machine_id === id);
+        const name = document.getElementById('mach-name').value.trim();
+        const type = document.getElementById('mach-type').value.trim();
+        const status = document.getElementById('mach-status').value;
+        if (!name || !type) { alert('Заполните все поля'); return; }
+        m.machine_name = name; m.machine_type = type; m.status = status;
+        renderCurrentTab();
+    }
+
+    function deleteMachine(id) {
+        if (!confirm('Удалить станок?')) return;
+        DB.machines = DB.machines.filter(x => x.machine_id !== id);
+        renderCurrentTab();
+    }
+
+    // ---- ДЕТАЛИ ----
+    function addPart() {
+        const formDiv = document.getElementById('part-form');
+        formDiv.classList.remove('hidden');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Название</label><input id="part-name" placeholder="Название детали"></div>
+            <div class="form-field"><label>Материал</label><input id="part-material" placeholder="Материал"></div>
+            <div class="form-field"><label>Цена</label><input id="part-price" type="number" step="0.01" placeholder="0.00"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveNewPart()">Сохранить</button>
+                <button class="btn" onclick="document.getElementById('part-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveNewPart() {
+        const name = document.getElementById('part-name').value.trim();
+        const material = document.getElementById('part-material').value.trim();
+        const price = parseFloat(document.getElementById('part-price').value);
+        if (!name || !material || isNaN(price)) { alert('Заполните все поля'); return; }
+        const id = nextId(DB.parts, 'part_id');
+        DB.parts.push({ part_id: id, part_name: name, material, unit_price: price });
+        renderCurrentTab();
+    }
+
+    function editPart(id) {
+        const p = DB.parts.find(x => x.part_id === id);
+        if (!p) return;
+        const formDiv = document.getElementById('part-form');
+        formDiv.classList.remove('hidden');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Название</label><input id="part-name" value="${p.part_name}"></div>
+            <div class="form-field"><label>Материал</label><input id="part-material" value="${p.material}"></div>
+            <div class="form-field"><label>Цена</label><input id="part-price" type="number" step="0.01" value="${p.unit_price}"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveEditPart(${id})">Обновить</button>
+                <button class="btn" onclick="document.getElementById('part-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveEditPart(id) {
+        const p = DB.parts.find(x => x.part_id === id);
+        const name = document.getElementById('part-name').value.trim();
+        const material = document.getElementById('part-material').value.trim();
+        const price = parseFloat(document.getElementById('part-price').value);
+        if (!name || !material || isNaN(price)) { alert('Заполните все поля'); return; }
+        p.part_name = name; p.material = material; p.unit_price = price;
+        renderCurrentTab();
+    }
+
+    function deletePart(id) {
+        if (!confirm('Удалить деталь?')) return;
+        DB.parts = DB.parts.filter(x => x.part_id !== id);
+        renderCurrentTab();
+    }
+
+    // ---- ЗАКАЗЫ ----
+    function addOrder() {
+        const formDiv = document.getElementById('order-form');
+        formDiv.classList.remove('hidden');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Клиент</label><input id="ord-client" placeholder="Клиент"></div>
+            <div class="form-field"><label>Дата заказа</label><input id="ord-date" type="date" value="2025-01-01"></div>
+            <div class="form-field"><label>Срок</label><input id="ord-due" type="date" value="2025-02-01"></div>
+            <div class="form-field"><label>Сумма</label><input id="ord-amount" type="number" step="0.01" placeholder="0.00"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveNewOrder()">Сохранить</button>
+                <button class="btn" onclick="document.getElementById('order-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveNewOrder() {
+        const client = document.getElementById('ord-client').value.trim();
+        const date = document.getElementById('ord-date').value;
+        const due = document.getElementById('ord-due').value;
+        const amount = parseFloat(document.getElementById('ord-amount').value);
+        if (!client || !date || !due || isNaN(amount)) { alert('Заполните все поля'); return; }
+        const id = nextId(DB.orders, 'order_id');
+        DB.orders.push({ order_id: id, client_name: client, order_date: date, due_date: due, total_amount: amount });
+        renderCurrentTab();
+    }
+
+    function editOrder(id) {
+        const o = DB.orders.find(x => x.order_id === id);
+        if (!o) return;
+        const formDiv = document.getElementById('order-form');
+        formDiv.classList.remove('hidden');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Клиент</label><input id="ord-client" value="${o.client_name}"></div>
+            <div class="form-field"><label>Дата заказа</label><input id="ord-date" type="date" value="${o.order_date}"></div>
+            <div class="form-field"><label>Срок</label><input id="ord-due" type="date" value="${o.due_date}"></div>
+            <div class="form-field"><label>Сумма</label><input id="ord-amount" type="number" step="0.01" value="${o.total_amount}"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveEditOrder(${id})">Обновить</button>
+                <button class="btn" onclick="document.getElementById('order-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveEditOrder(id) {
+        const o = DB.orders.find(x => x.order_id === id);
+        const client = document.getElementById('ord-client').value.trim();
+        const date = document.getElementById('ord-date').value;
+        const due = document.getElementById('ord-due').value;
+        const amount = parseFloat(document.getElementById('ord-amount').value);
+        if (!client || !date || !due || isNaN(amount)) { alert('Заполните все поля'); return; }
+        o.client_name = client; o.order_date = date; o.due_date = due; o.total_amount = amount;
+        renderCurrentTab();
+    }
+
+    function deleteOrder(id) {
+        if (!confirm('Удалить заказ?')) return;
+        DB.orders = DB.orders.filter(x => x.order_id !== id);
+        renderCurrentTab();
+    }
+
+    // ---- СМЕННЫЕ ЗАДАНИЯ ----
+    function addShiftTask() {
+        const formDiv = document.getElementById('shiftTask-form');
+        formDiv.classList.remove('hidden');
+        const empOpts = DB.employees.map(e => `<option value="${e.employee_id}">${e.last_name} ${e.first_name}</option>`).join('');
+        const machOpts = DB.machines.map(m => `<option value="${m.machine_id}">${m.machine_name}</option>`).join('');
+        const partOpts = DB.parts.map(p => `<option value="${p.part_id}">${p.part_name}</option>`).join('');
+        const orderOpts = DB.orders.map(o => `<option value="${o.order_id}">${o.client_name}</option>`).join('');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Сотрудник</label><select id="st-emp">${empOpts}</select></div>
+            <div class="form-field"><label>Станок</label><select id="st-mach">${machOpts}</select></div>
+            <div class="form-field"><label>Деталь</label><select id="st-part">${partOpts}</select></div>
+            <div class="form-field"><label>Заказ</label><select id="st-order">${orderOpts}</select></div>
+            <div class="form-field"><label>Дата смены</label><input id="st-date" type="date" value="2026-11-20"></div>
+            <div class="form-field"><label>План</label><input id="st-plan" type="number" value="100"></div>
+            <div class="form-field"><label>Факт</label><input id="st-actual" type="number" value="0"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveNewShiftTask()">Сохранить</button>
+                <button class="btn" onclick="document.getElementById('shiftTask-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveNewShiftTask() {
+        const empId = parseInt(document.getElementById('st-emp').value);
+        const machId = parseInt(document.getElementById('st-mach').value);
+        const partId = parseInt(document.getElementById('st-part').value);
+        const orderId = parseInt(document.getElementById('st-order').value);
+        const date = document.getElementById('st-date').value;
+        const plan = parseInt(document.getElementById('st-plan').value);
+        const actual = parseInt(document.getElementById('st-actual').value) || 0;
+        if (!date || isNaN(plan)) { alert('Заполните дату и план'); return; }
+        const id = nextId(DB.shiftTasks, 'task_id');
+        DB.shiftTasks.push({ task_id: id, machine_id: machId, part_id: partId, employee_id: empId, order_id: orderId, shift_date: date, planned_quantity: plan, actual_quantity: actual });
+        renderCurrentTab();
+    }
+
+    function editShiftTask(id) {
+        const t = DB.shiftTasks.find(x => x.task_id === id);
+        if (!t) return;
+        const formDiv = document.getElementById('shiftTask-form');
+        formDiv.classList.remove('hidden');
+        const empOpts = DB.employees.map(e => `<option value="${e.employee_id}" ${e.employee_id === t.employee_id ? 'selected' : ''}>${e.last_name} ${e.first_name}</option>`).join('');
+        const machOpts = DB.machines.map(m => `<option value="${m.machine_id}" ${m.machine_id === t.machine_id ? 'selected' : ''}>${m.machine_name}</option>`).join('');
+        const partOpts = DB.parts.map(p => `<option value="${p.part_id}" ${p.part_id === t.part_id ? 'selected' : ''}>${p.part_name}</option>`).join('');
+        const orderOpts = DB.orders.map(o => `<option value="${o.order_id}" ${o.order_id === t.order_id ? 'selected' : ''}>${o.client_name}</option>`).join('');
+        formDiv.innerHTML = `
+            <div class="form-field"><label>Сотрудник</label><select id="st-emp">${empOpts}</select></div>
+            <div class="form-field"><label>Станок</label><select id="st-mach">${machOpts}</select></div>
+            <div class="form-field"><label>Деталь</label><select id="st-part">${partOpts}</select></div>
+            <div class="form-field"><label>Заказ</label><select id="st-order">${orderOpts}</select></div>
+            <div class="form-field"><label>Дата смены</label><input id="st-date" type="date" value="${t.shift_date}"></div>
+            <div class="form-field"><label>План</label><input id="st-plan" type="number" value="${t.planned_quantity}"></div>
+            <div class="form-field"><label>Факт</label><input id="st-actual" type="number" value="${t.actual_quantity}"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveEditShiftTask(${id})">Обновить</button>
+                <button class="btn" onclick="document.getElementById('shiftTask-form').classList.add('hidden')">Отмена</button>
+            </div>
+        `;
+    }
+
+    function saveEditShiftTask(id) {
+        const t = DB.shiftTasks.find(x => x.task_id === id);
+        const empId = parseInt(document.getElementById('st-emp').value);
+        const machId = parseInt(document.getElementById('st-mach').value);
+        const partId = parseInt(document.getElementById('st-part').value);
+        const orderId = parseInt(document.getElementById('st-order').value);
+        const date = document.getElementById('st-date').value;
+        const plan = parseInt(document.getElementById('st-plan').value);
+        const actual = parseInt(document.getElementById('st-actual').value) || 0;
+        if (!date || isNaN(plan)) { alert('Заполните дату и план'); return; }
+        t.employee_id = empId; t.machine_id = machId; t.part_id = partId; t.order_id = orderId;
+        t.shift_date = date; t.planned_quantity = plan; t.actual_quantity = actual;
+        renderCurrentTab();
+    }
+
+    function deleteShiftTask(id) {
+        if (!confirm('Удалить сменное задание?')) return;
+        DB.shiftTasks = DB.shiftTasks.filter(x => x.task_id !== id);
+        renderCurrentTab();
+    }
+
+    // ======================== АНАЛИТИЧЕСКИЕ ЗАПРОСЫ ========================
+
+    function runQuery7() {
+        const result = DB.shiftTasks.map(t => {
+            const emp = DB.employees.find(e => e.employee_id === t.employee_id);
+            const mach = DB.machines.find(m => m.machine_id === t.machine_id);
+            const part = DB.parts.find(p => p.part_id === t.part_id);
+            const ord = DB.orders.find(o => o.order_id === t.order_id);
+            return {
+                task_id: t.task_id,
+                employee_name: emp ? emp.last_name + ' ' + emp.first_name : '—',
+                machine_name: mach ? mach.machine_name : '—',
+                part_name: part ? part.part_name : '—',
+                client_name: ord ? ord.client_name : '—',
+                shift_date: t.shift_date,
+                planned_quantity: t.planned_quantity,
+                actual_quantity: t.actual_quantity
+            };
+        }).sort((a, b) => b.shift_date.localeCompare(a.shift_date) || a.task_id - b.task_id);
+
+        let html = `<table><thead><tr>
+            <th>ID</th><th>Сотрудник</th><th>Станок</th><th>Деталь</th><th>Клиент</th><th>Дата смены</th><th>План</th><th>Факт</th>
+        </tr></thead><tbody>`;
+        if (!result.length) html += `<tr class="empty-row"><td colspan="8">Нет данных</td></tr>`;
+        else result.forEach(r => {
+            html += `<tr>
+                <td>${r.task_id}</td><td>${r.employee_name}</td><td>${r.machine_name}</td>
+                <td>${r.part_name}</td><td>${r.client_name}</td><td>${r.shift_date}</td>
+                <td>${r.planned_quantity}</td><td>${r.actual_quantity}</td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+        const container = document.getElementById('query7-result');
+        container.innerHTML = html;
+        container.classList.remove('hidden');
+    }
+
+    function runQuery8() {
+        const map = new Map();
+        DB.machines.forEach(m => {
+            map.set(m.machine_id, { machine_name: m.machine_name, status: m.status, total_planned: 0, total_actual: 0 });
+        });
+        DB.shiftTasks.forEach(t => {
+            if (map.has(t.machine_id)) {
+                const rec = map.get(t.machine_id);
+                rec.total_planned += t.planned_quantity;
+                rec.total_actual += t.actual_quantity;
+            }
+        });
+        const result = Array.from(map.values()).map(r => {
+            let eff = 0;
+            if (r.total_planned > 0) eff = (r.total_actual / r.total_planned) * 100;
+            return { ...r, efficiency_percentage: Math.round(eff * 100) / 100 };
+        }).sort((a, b) => b.efficiency_percentage - a.efficiency_percentage);
+
+        let html = `<table><thead><tr>
+            <th>Станок</th><th>Статус</th><th>План (всего)</th><th>Факт (всего)</th><th>% выполнения</th>
+        </tr></thead><tbody>`;
+        if (!result.length) html += `<tr class="empty-row"><td colspan="5">Нет данных</td></tr>`;
+        else result.forEach(r => {
+            html += `<tr>
+                <td>${r.machine_name}</td><td>${r.status}</td><td>${r.total_planned}</td><td>${r.total_actual}</td><td>${r.efficiency_percentage}%</td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+        const container = document.getElementById('query8-result');
+        container.innerHTML = html;
+        container.classList.remove('hidden');
+    }
+
+    function runQuery9() {
+        const map = new Map();
+        DB.orders.forEach(o => {
+            map.set(o.order_id, { order_id: o.order_id, client_name: o.client_name, total_amount: o.total_amount, tasks_assigned: 0, total_parts_ordered: 0 });
+        });
+        DB.shiftTasks.forEach(t => {
+            if (map.has(t.order_id)) {
+                const rec = map.get(t.order_id);
+                rec.tasks_assigned += 1;
+                rec.total_parts_ordered += t.planned_quantity;
+            }
+        });
+        const result = Array.from(map.values()).sort((a, b) => b.total_amount - a.total_amount);
+
+        let html = `<table><thead><tr>
+            <th>ID заказа</th><th>Клиент</th><th>Сумма</th><th>Заданий</th><th>Деталей (план)</th>
+        </tr></thead><tbody>`;
+        if (!result.length) html += `<tr class="empty-row"><td colspan="5">Нет данных</td></tr>`;
+        else result.forEach(r => {
+            html += `<tr>
+                <td>${r.order_id}</td><td>${r.client_name}</td><td>${r.total_amount.toFixed(2)}</td><td>${r.tasks_assigned}</td><td>${r.total_parts_ordered}</td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+        const container = document.getElementById('query9-result');
+        container.innerHTML = html;
+        container.classList.remove('hidden');
+    }
+
+    // ======================== НАВИГАЦИЯ ========================
+    let currentTab = 'positions';
+
+    function renderCurrentTab() {
+        const panel = document.getElementById('panel');
+        switch (currentTab) {
+            case 'positions': panel.innerHTML = renderPositions(); break;
+            case 'employees': panel.innerHTML = renderEmployees(); break;
+            case 'machines': panel.innerHTML = renderMachines(); break;
+            case 'parts': panel.innerHTML = renderParts(); break;
+            case 'orders': panel.innerHTML = renderOrders(); break;
+            case 'shiftTasks': panel.innerHTML = renderShiftTasks(); break;
+            case 'queries': panel.innerHTML = renderQueries(); break;
+            default: panel.innerHTML = renderPositions();
+        }
+    }
+
+    // ======================== ИНИЦИАЛИЗАЦИЯ ========================
+    document.addEventListener('DOMContentLoaded', () => {
+        renderCurrentTab();
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTab = btn.dataset.tab;
+                renderCurrentTab();
+            });
+        });
+    });
+
+    // Глобальные функции для onclick
+    window.addPosition = addPosition;
+    window.saveNewPosition = saveNewPosition;
+    window.editPosition = editPosition;
+    window.saveEditPosition = saveEditPosition;
+    window.deletePosition = deletePosition;
+
+    window.addEmployee = addEmployee;
+    window.saveNewEmployee = saveNewEmployee;
+    window.editEmployee = editEmployee;
+    window.saveEditEmployee = saveEditEmployee;
+    window.deleteEmployee = deleteEmployee;
+
+    window.addMachine = addMachine;
+    window.saveNewMachine = saveNewMachine;
+    window.editMachine = editMachine;
+    window.saveEditMachine = saveEditMachine;
+    window.deleteMachine = deleteMachine;
+
+    window.addPart = addPart;
+    window.saveNewPart = saveNewPart;
+    window.editPart = editPart;
+    window.saveEditPart = saveEditPart;
+    window.deletePart = deletePart;
+
+    window.addOrder = addOrder;
+    window.saveNewOrder = saveNewOrder;
+    window.editOrder = editOrder;
+    window.saveEditOrder = saveEditOrder;
+    window.deleteOrder = deleteOrder;
+
+    window.addShiftTask = addShiftTask;
+    window.saveNewShiftTask = saveNewShiftTask;
+    window.editShiftTask = editShiftTask;
+    window.saveEditShiftTask = saveEditShiftTask;
+    window.deleteShiftTask = deleteShiftTask;
+
+    window.runQuery7 = runQuery7;
+    window.runQuery8 = runQuery8;
+    window.runQuery9 = runQuery9;
+</script>
+</body>
+</html>
